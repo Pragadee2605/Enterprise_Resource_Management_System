@@ -416,6 +416,32 @@ class UserViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """Deactivate a user (soft delete)."""
+        user = self.get_object()
+        
+        # Prevent self-deactivation
+        if user.id == request.user.id:
+            return Response(
+                {
+                    'success': False,
+                    'message': 'You cannot deactivate your own account'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.is_active = False
+        user.save()
+        
+        logger.info(f"User deactivated: {user.email} by {request.user.email}")
+        
+        return Response({
+            'success': True,
+            'message': 'User deactivated successfully',
+            'data': UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
         """Activate a deactivated user."""
         user = self.get_object()
